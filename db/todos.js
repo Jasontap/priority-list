@@ -13,14 +13,48 @@ const getAllTodos = async () => {
 }
 
 const createTodo = async ({title, comment, creatorId, listId}) => {
+  
   try {
-    const {rows: [todo]} = await client.query(`
-      INSERT INTO todos(title, comment, "creatorId", list_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `, [title, comment, creatorId, listId]);
     
-    return todo;
+    // -- Find current tail:
+    const {rows: [tailId]} = await client.query(`
+      SELECT todo_id FROM todos 
+      WHERE "creatorId" = $1 AND prev_id IS NULL;
+    `, [creatorId]);
+
+    const {rows: [newTodo]} = tailId ? (
+      // -- Insert new todo:
+      await client.query(`
+        INSERT INTO todos ("creatorId", title, next_id, prev_id, list_id)
+        VALUES ($1, $2, $3, NULL, $4)
+        RETURNING *;    
+      `, [creatorId, title, tailId.todo_id, listId])
+    ) : (
+      await client.query(`
+        INSERT INTO todos ("creatorId", title, next_id, prev_id, list_id)
+        VALUES ($1, $2, NULL, NULL, $3)
+        RETURNING *;    
+      `, [creatorId, title, listId])
+    )
+
+      // -- Update old tail:
+    let oldTail;
+    if (tailId) {
+      oldTail = await client.query(`
+        UPDATE todos 
+        SET prev_id = ${newTodo.todo_id} 
+        WHERE todo_id = ${tailId.todo_id}
+        RETURNING *;
+      `);
+    }
+
+    // const {rows: [todo]} = await client.query(`
+    //   INSERT INTO todos(title, comment, "creatorId", list_id, prev_id, next_id)
+    //   VALUES ($1, $2, $3, $4, $5, $6)
+    //   RETURNING *;
+    // `, [title, comment, creatorId, listId, prevId, nextId]);
+    
+    return newTodo;
   } catch(ex) {
     console.log('error in createTodo adapter!');
     console.error(ex);
@@ -29,10 +63,26 @@ const createTodo = async ({title, comment, creatorId, listId}) => {
 
 const getTodosByUserId = async (userId) => {
   try {
-    const {rows: todos} = await client.query(`
-      SELECT * FROM todos
-      WHERE "creatorId" = $1;
-    `, [userId])
+    const { rows: todos } = await client.query(`
+        WITH RECURSIVE ordered AS (
+          SELECT todo_id, title, comment, prev_id, next_id
+          FROM todos
+          WHERE "creatorId" = $1 AND prev_id IS NULL   -- head item
+          
+          UNION ALL
+          
+          SELECT t.todo_id, t.title, t.comment, t.prev_id, t.next_id
+          FROM todos t
+          INNER JOIN ordered o ON t.todo_id = o.next_id
+        )
+        SELECT * FROM ordered;
+    `,
+      // `
+      //   SELECT * FROM todos
+      //   WHERE "creatorId" = $1;
+      // `
+      [userId]
+    );
 
     return todos;
   } catch(ex) {

@@ -57,6 +57,7 @@ server.use('*', (req, res, next) => {
 })
 
 server.use((error, req, res, next) => {
+  console.log(error)
   res.send(error)
 })
 

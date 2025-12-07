@@ -57,9 +57,11 @@ const createTables = async () => {
       CREATE TABLE todos (
         todo_id SERIAL PRIMARY KEY,
         title VARCHAR NOT NULL,
-        comment VARCHAR DEFAULT '',
+        note VARCHAR DEFAULT '',
         "creatorId" uuid REFERENCES users (user_id),
-        list_id SERIAL REFERENCES lists (list_id)
+        list_id SERIAL REFERENCES lists (list_id),
+        prev_id INTEGER REFERENCES todos(todo_id) ON DELETE SET NULL,
+        next_id INTEGER REFERENCES todos(todo_id) ON DELETE SET NULL
       );
       
     `);
@@ -112,8 +114,10 @@ const createInitialTodos = async () => {
     // USER #1 todo seeding (two different lists)
     const test = await createList({title: 'User 1 List 1', ownerID: user1.user_id});
     await createTodo({title: 'Go Running.', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
-    await createTodo({title: 'Relax.', comment: '', creatorId: user1.user_id, listId: 1 });
+    await createTodo({title: 'Relax.', comment: '', creatorId: user1.user_id, listId: 1});
     await createTodo({title: 'Study.', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
+    await createTodo({title: 'work.', comment: '', creatorId: user1.user_id, listId: 1});
+    await createTodo({title: 'blah', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
 
     await createList({title: 'User 1 List 2', ownerID: user1.user_id});
     await createTodo({title: 'Replace Tires.', comment: '', creatorId: user1.user_id, listId: 2 });

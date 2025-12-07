@@ -26,7 +26,6 @@ function Login({setToken, navigate, signUp=false}) {
     e.preventDefault();
     if (password === pwConfirm) {
       // if (password.length >= 8) {
-        console.log('hitting here')
         const response = await registerUser({username, email, password});
         
         if (response.error) {
