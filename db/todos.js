@@ -19,8 +19,8 @@ const createTodo = async ({title, comment, creatorId, listId}) => {
     // -- Find current tail:
     const {rows: [tailId]} = await client.query(`
       SELECT todo_id FROM todos 
-      WHERE "creatorId" = $1 AND prev_id IS NULL;
-    `, [creatorId]);
+      WHERE "creatorId" = $1 AND prev_id IS NULL AND list_id = $2;
+    `, [creatorId, listId]);
 
     const {rows: [newTodo]} = tailId ? (
       // -- Insert new todo:
@@ -160,6 +160,50 @@ const clearTodoNote = async (todoId) => {
   }
 }
 
+const moveTodoToTail = async (todoId, listId) => {
+  try {
+    const {rows: [todo]} = await client.query(`
+      SELECT * from todos
+      WHERE todo_id = $1;
+    `, [todoId]);
+    
+    // set prev todo's next to cur todo's next todo id
+    await client.query(`
+      UPDATE todos SET next_id = $1 WHERE todo_id = $2;
+    `, [todo.next_id, todo.prev_id])
+
+    await client.query(`
+      UPDATE todos SET prev_id = $2 WHERE todo_id = $1;
+    `, [todo.next_id, todo.prev_id])
+
+    // get tail todo ID
+    const {rows: [tail]} = await client.query(`
+      SELECT todo_id from todos WHERE prev_id IS NULL AND list_id = $1;  
+    `, [listId])
+
+    console.log(tail)
+
+    // set nexst_id to tail id
+    await client.query(`
+      UPDATE todos SET next_id = $1 WHERE todo_id = $2;  
+    `, [tail.todo_id, todo.todo_id])
+    
+    // set prev_id to null 
+    await client.query(`
+      UPDATE todos SET prev_id = NULL WHERE todo_id = $1;  
+    `, [todo.todo_id])
+
+    // set tail's prev to moved item
+    await client.query(`
+      UPDATE todos SET prev_id = $1 WHERE todo_id = $2;  
+    `, [todoId, tail.todo_id])
+
+    } catch(ex) {
+    console.log("error moving todo to tail of list in DB adapter");
+    console.error(ex);
+  }
+}
+
 module.exports = {
   getAllTodos,
   createTodo,
@@ -168,5 +212,6 @@ module.exports = {
   getTodoByTodoId,
   updateTodo,
   attachTodoNote,
-  clearTodoNote
+  clearTodoNote,
+  moveTodoToTail
 }

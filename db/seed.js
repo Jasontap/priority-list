@@ -4,7 +4,8 @@ const {
   createTodo,
   createUser,
   createList,
-  getListsByUserId
+  getListsByUserId,
+  moveTodoToTail
 } = require('./');
 
 
@@ -113,7 +114,7 @@ const createInitialTodos = async () => {
     
     // USER #1 todo seeding (two different lists)
     const test = await createList({title: 'User 1 List 1', ownerID: user1.user_id});
-    await createTodo({title: 'Go Running.', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
+    const head = await createTodo({title: 'Go Running.', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
     await createTodo({title: 'Relax.', comment: '', creatorId: user1.user_id, listId: 1});
     await createTodo({title: 'Study.', comment: '1- comment', creatorId: user1.user_id, listId: 1 });
     await createTodo({title: 'work.', comment: '', creatorId: user1.user_id, listId: 1});
@@ -143,6 +144,8 @@ const createInitialTodos = async () => {
     await createTodo({title: 'Replace Tires - 3.', comment: '3- comment', creatorId: user3.user_id, listId: 6 });
     await createTodo({title: 'Prep lecture - 3.', comment: '3- comment', creatorId: user3.user_id, listId: 6 });
     
+    // await moveTodoToTail(head.todo_id, 1)
+    await moveTodoToTail(3, 1)
     
     console.log('Finished creating initial todos and respective lists')
     
