@@ -7,7 +7,8 @@ const {
   getTodoByTodoId,
   updateTodo,
   attachTodoNote,
-  clearTodoNote
+  clearTodoNote,
+  moveTodoToTail
 } = require('../db');
 
 todosRouter.get('/:todoId', requireUser, async (req, res, next) => {
@@ -125,6 +126,35 @@ todosRouter.put('/:todoId/note', requireUser, async (req, res, next) => {
         typeof ex === "string"
           ? ex
           : "error clearing note from todo in todosRouter put /:todoId/note",
+        true
+      )
+    );
+  }
+})
+
+todosRouter.put('/:todoId/move', requireUser, async (req, res, next) => {
+  try {
+    const { todoId } = req.params;
+    const todo = await getTodoByTodoId(todoId);
+
+    if (todo && todo.creatorId === req.user.user_id) {
+      await moveTodoToTail(todoId, todo.list_id);
+
+      res.send({
+        data: [],
+        message: "Your task has been moved to the bottom of the list!",
+        error: false,
+      });
+    } else {
+      throw "Sorry, there was an issues moving the task to the bottom of the list. Refresh and try again.";
+    }
+  } catch(ex) {
+    next(
+      new Message(
+        [],
+        typeof ex === "string"
+          ? ex
+          : "error moving todo to bottom of list",
         true
       )
     );

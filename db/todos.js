@@ -65,13 +65,13 @@ const getTodosByUserId = async (userId) => {
   try {
     const { rows: todos } = await client.query(`
         WITH RECURSIVE ordered AS (
-          SELECT todo_id, title, comment, prev_id, next_id
+          SELECT todo_id, list_id, title, note, prev_id, next_id
           FROM todos
           WHERE "creatorId" = $1 AND prev_id IS NULL   -- head item
           
           UNION ALL
           
-          SELECT t.todo_id, t.title, t.comment, t.prev_id, t.next_id
+          SELECT t.todo_id, t.list_id, t.title, t.note, t.prev_id, t.next_id
           FROM todos t
           INNER JOIN ordered o ON t.todo_id = o.next_id
         )
@@ -83,6 +83,7 @@ const getTodosByUserId = async (userId) => {
       // `
       [userId]
     );
+
 
     return todos;
   } catch(ex) {
@@ -161,6 +162,7 @@ const clearTodoNote = async (todoId) => {
 }
 
 const moveTodoToTail = async (todoId, listId) => {
+  console.log(listId)
   try {
     const {rows: [todo]} = await client.query(`
       SELECT * from todos
@@ -180,8 +182,6 @@ const moveTodoToTail = async (todoId, listId) => {
     const {rows: [tail]} = await client.query(`
       SELECT todo_id from todos WHERE prev_id IS NULL AND list_id = $1;  
     `, [listId])
-
-    console.log(tail)
 
     // set nexst_id to tail id
     await client.query(`

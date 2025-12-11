@@ -170,7 +170,7 @@ export async function addTodoNote(todoId, noteText, token) {
     
     return response.json();
   } catch(ex) {
-    console.lgo('error in addTodoNote http method');
+    console.log('error in addTodoNote http method');
   }
 }
 
@@ -183,7 +183,20 @@ export async function clearTodoNote(todoId, token) {
       'Authorization': `Bearer ${token}`
     }})
   } catch(ex) {
-    console.lgo('error in clearTodoNote http method');
+    console.log('error in clearTodoNote http method');
+  }
+}
+
+export async function moveTodoToListBottom({todoId, token}) {
+  try {
+    await fetch(`${BASE_URL}/todos/${todoId}/move`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }})
+  } catch(ex) {
+    console.log('error in moveTodoToListBottom http method');
   }
 }
 

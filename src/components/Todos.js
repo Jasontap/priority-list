@@ -1,7 +1,7 @@
 import React, {useEffect, useState, createContext, useContext} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import AddTodoForm from './AddTodoForm';
-import { destroyTodo, destroyList } from '../http-methods';
+import { destroyTodo, destroyList, moveTodoToListBottom } from '../http-methods';
 import { TokenContext } from '../Context';
 import { EditTodo, EditListName } from './';
 import { Button } from '@mui/material';
@@ -51,6 +51,20 @@ function Todos({
     }
   }
   
+  async function whackAMole(ev, todoId) {
+    if (ev.target.checked) {
+      setTimeoutId(
+        setTimeout(async () => {
+          moveTodoToListBottom({todoId, token})
+          getUsersTodoLists();
+        }, 1500)
+      );
+    } else {
+      clearTimeout(timeoutId);
+      setTimeoutId("");
+    }  
+  }
+
   async function deleteList(listId) {
     await destroyList({listId, token});
     getUsersTodoLists();
@@ -97,7 +111,8 @@ function Todos({
                 value="delete"
                 type="checkbox"
                 name="delete"
-                onClick={(ev) => deleteTodo(ev, todo.todo_id)}
+                onClick={(ev) => whackAMole(ev, todo.todo_id)}
+                // onClick={(ev) => deleteTodo(ev, todo.todo_id)}
               />
               {/* <Link to={`/lists/${listId}/todo/${todo.todo_id}/edit`}>{todo.title}</Link> */}
               {todoEdit === todo.todo_id ? (
